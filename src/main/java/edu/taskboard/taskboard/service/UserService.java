@@ -3,29 +3,42 @@ package edu.taskboard.taskboard.service;
 
 import edu.taskboard.taskboard.model.User;
 import edu.taskboard.taskboard.repository.UserRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @Transactional
-public class UserService {
+@AllArgsConstructor
+public class UserService  implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ValidationService validationService;
 
 
-    private final UserRepository userRepository;
 
-    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
-    }
+
+
+
 
     public List<User> getAll() {
-        return userRepository.findAll();
+        List<User> users = userRepository.findAll();
+        log.error("DEBUG - Nombre d'utilisateurs chargés : {}", users.size()); // Log en ERROR pour être bien visible
+        users.forEach(u -> log.debug("User loaded: ID={}, Email={}", u.getId(), u.getEmail()));
+        return users;
     }
 
     public void save(User user) {
@@ -33,20 +46,19 @@ public class UserService {
     }
 
     public void signup(User user) {
-        String passwordCrypt = passwordEncoder.encode(user.getPassword());
-        user.setPassword(passwordCrypt);
-        userRepository.save(user);
+
+        this.save(user);
+
+        validationService.saveValidation(user);
     }
 
 
-    private User findByMail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-
-        return user.orElse(null);
+    private Optional<User> findByEmail(String email) {
+         return userRepository.findByEmail(email);
     }
 
     public boolean existsByEmail(String email) {
-        return findByMail(email) != null;
+        return this.findByEmail(email).isPresent();
     }
 
 
@@ -55,9 +67,6 @@ public class UserService {
     }
 
 
-    public Optional<User> findById(Long id) {
-        return userRepository.findById(id);
-    }
 
 
     public User update(Long id , User newUser) {
@@ -76,5 +85,11 @@ public class UserService {
         userToUpdate.setRole(newUser.getRole());
 
         return userToUpdate;
+    }
+
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return null;
     }
 }

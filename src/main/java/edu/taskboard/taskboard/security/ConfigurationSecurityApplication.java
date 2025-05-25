@@ -1,4 +1,4 @@
-package edu.taskboard.taskboard.controller;
+package edu.taskboard.taskboard.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
